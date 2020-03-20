@@ -4,6 +4,7 @@ from world import World
 
 import random
 from ast import literal_eval
+from util import Queue, Stack
 
 # Load world
 world = World()
@@ -29,6 +30,68 @@ player = Player(world.starting_room)
 # traversal_path = ['n', 'n']
 traversal_path = []
 
+graph = {}
+
+# create dictionary for each room when visited
+def create_room():
+    room = {}
+    for exit in player.current_room.get_exits():
+        room[exit] = "?"
+        graph[player.current_room.id] = room
+
+# Algorithm to find random exit that hasn't been explored yet
+def get_unexplored_exit():
+    unexplored = []
+    for exit in player.current_room.get_exits():
+        if graph[player.current_room.id][exit] == "?":
+            unexplored.append(exit)
+
+    return random.choice(unexplored)
+
+def path_to_unexplored_room(starting_room):
+    q = Queue()
+    q.enqueue([starting_room])
+    visited = set()
+
+    while q.size() > 0:
+        path = q.dequeue()
+        room = path[-1]
+
+        if list(graph[room].values()).count('?') != 0:
+            return path
+        if room not in visited:
+            visited.add(room)
+
+            for next_room in graph[room].values():
+                new_path = path.copy()
+                new_path.append(next_room)
+                q.enqueue(new_path)
+
+reverse_direction = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e', }
+create_room()
+
+while True:
+    if list(graph[player.current_room.id].values()).count('?') != 0:
+        room_id_before_move = player.current_room.id
+        random_exit = get_unexplored_exit()
+        player.travel(random_exit)
+        traversal_path.append(random_exit)
+        if player.current_room.id not in graph:
+            create_room()
+        graph[room_id_before_move][random_exit] = player.current_room.id
+
+        graph[player.current_room.id][reverse_direction[random_exit]] = room_id_before_move
+    
+    else:
+        path = path_to_unexplored_room(player.current_room.id)
+        if not path:
+            break
+        for room_id in path:
+            for direction in graph[player.current_room.id]:
+                if graph[player.current_room.id][direction] == room_id:
+                    player.travel(direction)
+                    traversal_path.append(direction)
+                    break
 
 
 # TRAVERSAL TEST
@@ -51,12 +114,12 @@ else:
 #######
 # UNCOMMENT TO WALK AROUND
 #######
-player.current_room.print_room_description(player)
-while True:
-    cmds = input("-> ").lower().split(" ")
-    if cmds[0] in ["n", "s", "e", "w"]:
-        player.travel(cmds[0], True)
-    elif cmds[0] == "q":
-        break
-    else:
-        print("I did not understand that command.")
+# player.current_room.print_room_description(player)
+# while True:
+#     cmds = input("-> ").lower().split(" ")
+#     if cmds[0] in ["n", "s", "e", "w"]:
+#         player.travel(cmds[0], True)
+#     elif cmds[0] == "q":
+#         break
+#     else:
+#         print("I did not understand that command.")
