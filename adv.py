@@ -13,9 +13,9 @@ world = World()
 # You may uncomment the smaller graphs for development and testing purposes.
 # map_file = "maps/test_line.txt"
 # map_file = "maps/test_cross.txt"
-map_file = "maps/test_loop.txt"
+# map_file = "maps/test_loop.txt"
 # map_file = "maps/test_loop_fork.txt"
-# map_file = "maps/main_maze.txt"
+map_file = "maps/main_maze.txt"
 
 # Loads the map into a dictionary
 room_graph=literal_eval(open(map_file, "r").read())
@@ -40,7 +40,7 @@ def create_room():
         graph[player.current_room.id] = room
 
 # Algorithm to find random exit that hasn't been explored yet
-def current_room_unexplored_exit():
+def get_unexplored_exit():
     unexplored = []
     for exit in player.current_room.get_exits():
         if graph[player.current_room.id][exit] == "?":
@@ -67,21 +67,37 @@ def path_to_unexplored_room(starting_room):
                 new_path.append(next_room)
                 q.enqueue(new_path)
 
+reverse_direction = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e', }
+create_room()
 
+while True:
+    if list(graph[player.current_room.id].values()).count('?') != 0:
+        room_id_before_move = player.current_room.id
+        random_exit = get_unexplored_exit()
+        player.travel(random_exit)
+        traversal_path.append(random_exit)
+        if player.current_room.id not in graph:
+            create_room()
+        graph[room_id_before_move][random_exit] = player.current_room.id
 
-print("graph: ", graph)
-print("traversal path", traversal_path)
+        graph[player.current_room.id][reverse_direction[random_exit]] = room_id_before_move
+    
+    else:
+        path = path_to_unexplored_room(player.current_room.id)
+        if not path:
+            break
+        for room_id in path:
+            for direction in graph[player.current_room.id]:
+                if graph[player.current_room.id][direction] == room_id:
+                    player.travel(direction)
+                    traversal_path.append(direction)
+                    break
 
 
 # TRAVERSAL TEST
 visited_rooms = set()
 player.current_room = world.starting_room
 visited_rooms.add(player.current_room)
-
-# print("currentroom id", player.current_room.id)
-# print("current room: ", player.current_room.get_exits())
-# print("visited rooms: ", visited_rooms)
-# print(len(room_graph), len(graph))
 
 for move in traversal_path:
     player.travel(move)
